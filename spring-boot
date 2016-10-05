@@ -1,10 +1,9 @@
 #!/bin/bash
-spring_boot_dir=/opt/spring-boot
-echo $spring_boot_dir
-# Custom Spring boot script should starts with spring-boot-{name}
-# spring_boot_scirpts=(name)
-spring_boot_scripts=(mongo)
+#spring_boot_dir=/opt/spring-boot
+SCRIPT=$(readlink -f $0)
+spring_boot_dir=`dirname $SCRIPT`
 
+source $spring_boot_dir/spring-boot-cfg
 source $spring_boot_dir/spring-boot-functions
 
 echo "Additional scripts are used: "${spring_boot_scripts[*]}
@@ -20,7 +19,7 @@ startup() {
     	echo -e "\t\t\t [\e[96mAlready running!\e[0m]"
     	exit
     fi
-    /opt/java/jre/bin/java -jar -Dspring.profiles.active=production `cat $spring_boot_dir/$app_dir/java_opts 2>/dev/null| tr "\n" " "` $app_name >$spring_boot_dir/$app_dir/recent.log &
+    $JAVA_CMD -jar -Dspring.profiles.active=production `cat $spring_boot_dir/$app_dir/java_opts 2>/dev/null| tr "\n" " "` $app_name >$spring_boot_dir/$app_dir/recent.log &
     if [ $? -eq 0 ]
     then
     	echo -e "\t\t\t [\e[92mOK\e[0m]"
@@ -31,7 +30,7 @@ startup() {
 
 help() {
 	echo "Usage: $0 status"
-    echo "Usage: $0 [app_name] start|stop|status|logs"
+    echo "Usage: $0 [app_name] start|stop|status|logs|logfile"
     echo -n "Available apps: "
     echo ${appdir_list[@]}
 }
@@ -57,6 +56,9 @@ then
  			for i in "${!appdir_list[@]}"; do
 				status "${appname_list[$i]}" "${appdir_list[$i]}"
 		    done
+			for i in "${!spring_boot_scripts[@]}"; do
+				$spring_boot_dir/spring-boot-${spring_boot_scripts[$i]} status
+			done
 			exit 0
 	else
 		for i in "${!spring_boot_scripts[@]}"; do
@@ -66,6 +68,11 @@ then
  	     if [ $? -eq 2 ]
     	 then
          	exit 0
+		 else
+			options=($(egrep -o '"\$1" = "([a-z]+)"' $spring_boot_dir/spring-boot-mongo | egrep -o '[a-z]+'))
+			options_in_line=${options[*]}
+			echo "Custom $1 script usage: $0 $1 ${options_in_line// /|}"
+			exit 1
     	 fi
 		fi
   		done

@@ -1,0 +1,6 @@
+#!/bin/bash
+# Custom Spring boot script should starts with spring-boot-{name}
+# spring_boot_scripts=(name,name2)
+spring_boot_scripts=(mongo)
+JAVA_CMD=/opt/java/jre/bin/java
+
