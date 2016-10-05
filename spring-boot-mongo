@@ -1,0 +1,29 @@
+#!/bin/bash
+source /opt/spring-boot/spring-boot-functions
+
+     if [ "$1" = "status" ]
+     then
+             status mongod mongodb
+             exit 2
+     elif [ "$1" = "start" ]
+     then
+             printf '%-50s %s' "Starting MongoDB..."
+             mongo_status=`ps ux | grep mongod | grep -v grep | wc -l`
+             if [ $mongo_status -ne 0 ]
+             then
+                  echo -e "\t\t\t [\e[96mAlready running!\e[0m]"
+                  exit 2
+             fi
+             /opt/spring-boot/mongodb/bin/mongod --config /opt/spring-boot/mongodb/mongo.config >/dev/null &
+             if [ $? -eq 0 ]
+             then
+                 echo -e "\t\t\t [\e[92mOK\e[0m]"
+             else
+                 echo -e "\t\t\t [\e[91mFailed!\e[0m]"
+             fi
+             exit 2
+     elif [ "$1" = "stop" ]
+     then
+             stop mongodb mongod
+             exit 2
+	fi

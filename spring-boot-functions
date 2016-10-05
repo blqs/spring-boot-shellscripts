@@ -1,0 +1,31 @@
+#!/bin/bash
+stop() {
+        app_dir=$1
+        app_name=$2
+
+        printf '%-50s %s' "Stopping $app_name [$app_dir]"
+        `ps ux | grep $app_name | grep -v grep | awk '{print $2}' | xargs kill`
+        if [ $? -eq 0 ]
+        then
+                echo -e "\t\t\t [\e[92mOK\e[0m]"
+        else
+                echo -e "\t\t\t [\e[91mFailed!\e[0m]"
+        fi
+}
+
+status() {
+        app_name=$1
+        app_dir=$2
+        printf '%-80s %s' "Status $app_name [$app_dir]"
+          pnr_status=`ps ux | grep $app_name | grep -v grep | wc -l`
+          if [ $pnr_status -eq 0 ]
+          then
+              echo -e "\t\t\t [\e[91mNot running\e[0m]"
+          elif [ $pnr_status -eq 1 ]
+          then
+              echo -e "\t\t\t [\e[92mRunning\e[0m]"
+          else
+              echo -e "\t\t\t [\e[91mRunning multiple versions?!\e[0m]"
+          fi
+}
+

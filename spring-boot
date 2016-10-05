@@ -1,0 +1,99 @@
+#!/bin/bash
+spring_boot_dir=/opt/spring-boot
+echo $spring_boot_dir
+# Custom Spring boot script should starts with spring-boot-{name}
+# spring_boot_scirpts=(name)
+spring_boot_scripts=(mongo)
+
+source $spring_boot_dir/spring-boot-functions
+
+echo "Additional scripts are used: "${spring_boot_scripts[*]}
+
+startup() {
+	app_dir=$1
+	app_name=$2
+	 
+	printf '%-80s %s' "Starting $app_name [$app_dir]"
+	app_status=`ps ux | grep $app_name | grep -v grep | wc -l`
+    if [ $app_status -ne 0 ]
+    then
+    	echo -e "\t\t\t [\e[96mAlready running!\e[0m]"
+    	exit
+    fi
+    /opt/java/jre/bin/java -jar -Dspring.profiles.active=production `cat $spring_boot_dir/$app_dir/java_opts 2>/dev/null| tr "\n" " "` $app_name >$spring_boot_dir/$app_dir/recent.log &
+    if [ $? -eq 0 ]
+    then
+    	echo -e "\t\t\t [\e[92mOK\e[0m]"
+    else
+    	echo -e "\t\t\t [\e[91mFailed!\e[0m]"
+    fi
+}
+
+help() {
+	echo "Usage: $0 status"
+    echo "Usage: $0 [app_name] start|stop|status|logs"
+    echo -n "Available apps: "
+    echo ${appdir_list[@]}
+}
+
+IFS=$'\n' 
+appdir_list=($(find $spring_boot_dir -name "*.jar" | cut -d/ -f4))
+appname_list=($(find $spring_boot_dir -name "*.jar"))
+unset IFS
+
+selected_app=$1
+for i in "${!appdir_list[@]}"; do
+	if [[ "${appdir_list[$i]}" = "${selected_app}" ]]
+	then
+		app_index=$i
+	fi
+done
+
+if [ "$app_index" = "" ]
+then
+	if [ "$1" = "status" ]
+	then
+			echo "All spring-boot related apps on this server!"
+ 			for i in "${!appdir_list[@]}"; do
+				status "${appname_list[$i]}" "${appdir_list[$i]}"
+		    done
+			exit 0
+	else
+		for i in "${!spring_boot_scripts[@]}"; do
+		if [ "$1" = "${spring_boot_scripts[$i]}" ]
+		then
+		 $spring_boot_dir/spring-boot-${spring_boot_scripts[$i]} $2
+ 	     if [ $? -eq 2 ]
+    	 then
+         	exit 0
+    	 fi
+		fi
+  		done
+         	help
+			exit 1
+	fi
+fi
+
+case "$2" in
+	start)
+		startup $selected_app ${appname_list[$app_index]}
+		;;
+	stop)
+        stop $selected_app ${appname_list[$app_index]} 
+		;;
+	status)
+		status ${appname_list[$app_index]} $selected_app
+		;;
+	logs)
+		echo "Logs for $selected_app aka ${appname_list[$app_index]}"
+		less $spring_boot_dir/$selected_app/recent.log
+		;;
+	logfile)
+		echo "$spring_boot_dir/$selected_app/recent.log"
+		;;
+	*)
+		help
+		exit 1
+		;;
+esac
+
